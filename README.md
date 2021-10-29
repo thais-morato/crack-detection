@@ -1,2 +1,2 @@
 # crack-detection
-## Concrete crack detection using Convolutional Neural Network
+### Concrete crack detection using Convolutional Neural Network
