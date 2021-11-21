@@ -1,42 +1,64 @@
 """
 
-
+    TODO: Documentation
 
 """
+
 import os
-from base.constants import *
+import base.params as params
+import base.constants as consts
+from keras.applications.vgg16 import preprocess_input
 from keras.preprocessing.image import ImageDataGenerator
-from keras.applications import vgg16
 
-def preprocess():
+def _getDirectory(set):
+    if set == consts.SetEnum.train:
+        return _getSetDirectory(consts.AP_FOLDER_TRAIN)
+    elif set == consts.SetEnum.validation:
+        return _getSetDirectory(consts.AP_FOLDER_VALIDATION)
+    else:
+        return _getSetDirectory(consts.AP_FOLDER_TEST)
 
-    trainDirectory = os.path.join(AP_PATH_DATASET, AP_FOLDER_TRAIN)
-    testDirectory = os.path.join(AP_PATH_DATASET, AP_FOLDER_TRAIN)
+def _getSetDirectory(setFolder):
+    return os.path.join(consts.AP_PATH_DATASET, setFolder)
 
-    trainDatagen = ImageDataGenerator(
-        preprocessing_function=vgg16.preprocess_input,
+def _getDataset(directory, preprocessingFunction, applyDataAugmentation):
+    dataGenerator = _getDataGenerator(preprocessingFunction, applyDataAugmentation)
+    
+    return dataGenerator.flow_from_directory(
+        directory=directory,
+        target_size=consts.TARGET_IMAGE_SIZE,
+        class_mode='binary',
+        batch_size=params.BATCH_SIZE,
+        shuffle=True,
+        seed=8)
+
+def _getDataGenerator(preprocessingFunction, applyDataAugmentation):
+    # Generate batches of tensor image data
+    # Documentation: https://www.tensorflow.org/api_docs/python/tf/keras/preprocessing/image/ImageDataGenerator
+    if applyDataAugmentation:
+        return _getDataGeneratorWithAugmentation(preprocessingFunction)
+    else:
+        return _getDataGeneratorWithoutAugmentation(preprocessingFunction)
+
+def _getDataGeneratorWithoutAugmentation(preprocessingFunction):
+    return ImageDataGenerator(preprocessing_function=preprocessingFunction)
+
+def _getDataGeneratorWithAugmentation(preprocessingFunction):
+    return ImageDataGenerator(
+        preprocessing_function=preprocessingFunction,
         rotation_range=40,
         width_shift_range=0.2,
         height_shift_range=0.2,
         shear_range=0.2,
         zoom_range=0.2,
-        horizontal_flip=True,
-        fill_mode='nearest'
-    )
+        horizontal_flip=True)
 
-    testDatagen = ImageDataGenerator(
-        preprocessing_function=vgg16.preprocess_input,
-        rotation_range=40,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        fill_mode='nearest'
-    )
+def getPreprocessedDataset(set, applyDataAugmentation=False):
+    directory = _getDirectory(set)
+    dataset = _getDataset(directory, preprocess_input, applyDataAugmentation)
+    return dataset
 
-    trainSet = trainDatagen.flow_from_directory(trainDirectory, target_size = TARGET_IMAGE_SIZE, batch_size = 32, class_mode = 'categorical')
-    testSet = testDatagen.flow_from_directory(testDirectory, target_size = TARGET_IMAGE_SIZE, batch_size = 32, class_mode = 'categorical')
-
-    return (trainSet, testSet)
-
+def getRawDataset(set, applyDataAugmentation=False):
+    directory = _getDirectory(set)
+    dataset = _getDataset(directory, None, applyDataAugmentation)
+    return dataset

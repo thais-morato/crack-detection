@@ -1,4 +1,5 @@
 __pycache__/
-dataset/
+dataset*/
 models/
-new.py
+scripts/
+wip-*

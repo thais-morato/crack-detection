@@ -7,6 +7,8 @@ from base.constants import *
 from datetime import datetime
 from keras.callbacks import ModelCheckpoint
 
+NUMBER_OF_CLASSES = 2
+
 def train(trainSet, testSet):
     vggModel = vgg16.VGG16(input_shape = IMAGE_SIZE + [3], weights = "imagenet", include_top = False)
 
@@ -28,7 +30,8 @@ def train(trainSet, testSet):
 
     trainingStart = datetime.now()
 
-    modelHistory = model.fit_generator(
+    # TODO: change to model.fit
+    modelHistory = model.fit(
         trainSet,
         validation_data = testSet,
         epochs = 10,
