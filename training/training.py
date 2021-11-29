@@ -5,6 +5,7 @@ import base.params as params
 from keras.models import Model
 import base.constants as consts
 from keras.applications import vgg16
+from tensorflow.keras.activations import sigmoid
 from keras.callbacks import ModelCheckpoint, CSVLogger
 from tensorflow.keras.models import load_model, save_model
 
@@ -24,7 +25,7 @@ def _addClassificationLayers(baseModel):
     flatten = layers.Flatten(name='flatten')(baseModel.output)
     hidden1 = layers.Dense(64, activation='relu', name='hidden_1')(flatten)
     hidden2 = layers.Dense(32, activation='relu', name='hidden_2')(hidden1)
-    prediction = layers.Dense(1, activation='softmax', name='prediction')(hidden2)
+    prediction = layers.Dense(1, activation=sigmoid, name='prediction')(hidden2)
     return Model(inputs=baseModel.input, outputs=prediction, name=params.MODEL_NAME)
 
 def _compileModel(model):
