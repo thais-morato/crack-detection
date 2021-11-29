@@ -1,4 +1,6 @@
 __pycache__/
 dataset*/
 models/
+checkpoints/
+log/
 wip-*

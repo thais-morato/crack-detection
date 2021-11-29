@@ -29,6 +29,7 @@
 
 """
 
+import sys
 import random, os, shutil
 import base.params as params
 import base.constants as consts
@@ -142,4 +143,7 @@ def run():
     _printStatistics()
 
 if __name__ == "__main__":
+    if params.PERCENTAGE_TRAIN + params.PERCENTAGE_VALIDATION + params.PERCENTAGE_TEST != 1:
+        sys.exit("PERCENTAGE_TRAIN, PERCENTAGE_VALIDATION and PERCENTAGE_TEST in params.py " +
+            "should sum up to 1")
     run()

@@ -4,10 +4,10 @@
 
 """
 
-import sys
-sys.path.insert(1, "C:/Users/Acer/Documents/UFMG/TCC/implementacao")
+import sys, os
+sys.path.insert(1, os.curdir)
 
-import random, os
+import random
 import base.params as params
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg

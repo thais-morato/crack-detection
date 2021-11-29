@@ -1,5 +1,5 @@
 IMAGE_SIZE = (227, 227)
-BATCH_SIZE = 8
+BATCH_SIZE = 32
 
 PATH_DATABASE = './Concrete Crack Images for Classification'
 FOLDER_NORMAL = "Negative"
@@ -11,4 +11,5 @@ PERCENTAGE_TRAIN = 0.7
 PERCENTAGE_VALIDATION = 0.15
 PERCENTAGE_TEST = 0.15
 
-MODEL_NAME = "model_1.1"
+MODEL_NAME = "mymodel"
+EPOCHS = 25

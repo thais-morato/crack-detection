@@ -4,9 +4,10 @@
 
 """
 
-import sys
-sys.path.insert(1, "C:/Users/Acer/Documents/UFMG/TCC/implementacao")
+import sys, os
+sys.path.insert(1, os.curdir)
 
+import base.params as params
 import base.constants as consts
 import matplotlib.pyplot as plt
 import preprocessing.preprocessing as prep
@@ -20,7 +21,7 @@ class _Plot:
         self.__figures += 1
         images, labels = next(iter(set))
         for images, labels in set:
-            for i in range(consts.BATCH_SIZE):
+            for i in range(params.BATCH_SIZE):
                 plt.subplot(3, 5, plot + 1)
                 plt.imshow(images[i].astype('uint8'))
                 plt.title(_getClassName(set.class_indices, labels[i]))
