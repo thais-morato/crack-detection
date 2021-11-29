@@ -63,7 +63,7 @@ def _getInitialEpoch(path):
     return (int)(path.split("-")[-1].split(consts.EXTENSION_MODEL)[0])
 
 def _getCallbacks():
-    filePath = os.path.join(consts.AP_FOLDER_CHECKPOINTS, params.MODEL_NAME + consts.EXTENSION_MODEL)
+    filePath = os.path.join(consts.AP_FOLDER_CHECKPOINTS, params.MODEL_NAME + consts.EXTENSION_CHECKPOINT)
     checkpoint = ModelCheckpoint(
         filepath=filePath,
         save_freq='epoch',
