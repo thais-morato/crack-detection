@@ -5,6 +5,7 @@ import base.params as params
 from keras.models import Model
 import base.constants as consts
 from keras.applications import vgg16
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.activations import sigmoid
 from keras.callbacks import ModelCheckpoint, CSVLogger
 from tensorflow.keras.models import load_model, save_model
@@ -28,10 +29,14 @@ def _addClassificationLayers(baseModel):
     prediction = layers.Dense(1, activation=sigmoid, name='prediction')(hidden2)
     return Model(inputs=baseModel.input, outputs=prediction, name=params.MODEL_NAME)
 
+def _getOptimizer():
+    return Adam(learning_rate=params.LEARNING_RATE)
+
 def _compileModel(model):
+    optimizer = _getOptimizer()
     model.compile(
         loss='binary_crossentropy',
-        optimizer='rmsprop',
+        optimizer=optimizer,
         metrics=['accuracy'])
 
 def _createFolderStructure(fromScratch):   
