@@ -57,7 +57,7 @@ def _plotAccuracyMetrics(epoch, accuracy, val_accuracy):
     plt.ylabel('Accuracy (%)')
     plt.xlabel('Epoch')
     plt.xlim(min(plt_epoch), max(plt_epoch))
-    plt.ylim(0, 100)
+    plt.ylim(None, 100)
     plt.legend(['Training', 'Validation'], loc='upper left')
     fig.show()
 
