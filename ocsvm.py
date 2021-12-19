@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 import seaborn as sn
 import base.params as params
@@ -25,8 +26,8 @@ def _getFilePaths(subset, isAnomalous):
                         classFolder)
     return [os.path.join(folder, img) for img in os.listdir(folder)]
 
-def _getPca(x, n):
-    pca = PCA(n_components=n)
+def _getPca(x):
+    pca = PCA(n_components=params.PCA_COMPONENTS)
     pca.fit(x)
     return pca
 
@@ -63,8 +64,15 @@ def _getTestSamples():
     return x, y
 
 def _predict(x, pca, ocSvm):
-    transformedX = pca.transform(x)
-    predictions = ocSvm.predict(transformedX)
+    predictions = []
+    nBatches = int(np.ceil(len(x)/params.BATCH_SIZE))
+    for i in range(nBatches):
+        initial = i*params.BATCH_SIZE
+        final = min(initial + params.BATCH_SIZE, len(x))
+        xBatch = x[initial:final]
+        transformedX = pca.transform(xBatch)
+        predictionsBatch = ocSvm.predict(transformedX)
+        predictions.extend(predictionsBatch)
     return predictions
 
 def _evaluate(y, predictions):
@@ -104,7 +112,7 @@ def _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives)
 def run():
     print("applying PCA to train samples...")
     xTrain = _getTrainSamples()
-    pca = _getPca(xTrain, 5)
+    pca = _getPca(xTrain)
     print("training OC-SVM...")
     ocSvm = _trainOcSvm(xTrain, pca)
     print("evaluating OC-SVM...")
