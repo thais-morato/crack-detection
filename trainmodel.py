@@ -27,8 +27,13 @@ def run():
     isTrainingFromScratch = _isTrainingFromScratch()
 
     print("fetching train and validation datasets...")
-    trainSet = prep.getPreprocessedDataset(set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
-    validationSet = prep.getPreprocessedDataset(set=consts.SetEnum.validation, applyDataAugmentation=False)
+    if(params.APPLY_PREPROCESSING):
+        trainSet = prep.getPreprocessedDataset(set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
+        validationSet = prep.getPreprocessedDataset(set=consts.SetEnum.validation, applyDataAugmentation=False)
+    else:
+        trainSet = prep.getRawDataset(set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
+        validationSet = prep.getRawDataset(set=consts.SetEnum.validation, applyDataAugmentation=False)
+
 
     print("starting training...")
     if isTrainingFromScratch:

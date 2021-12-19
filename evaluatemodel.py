@@ -28,7 +28,10 @@ def _loadModel():
 
 def _getRawAndPreprocessedTestSets():
     rawTestSet = prep.getRawDataset(set=consts.SetEnum.test, applyDataAugmentation=False)
-    testSet = prep.getPreprocessedDataset(set=consts.SetEnum.test, applyDataAugmentation=False)
+    if(params.APPLY_PREPROCESSING):
+        testSet = prep.getPreprocessedDataset(set=consts.SetEnum.test, applyDataAugmentation=False)
+    else:
+        testSet = prep.getRawDataset(set=consts.SetEnum.test, applyDataAugmentation=False)
     return (rawTestSet, testSet)
 
 def _getReferenceValues(dataset):

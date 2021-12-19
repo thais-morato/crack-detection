@@ -127,7 +127,7 @@ def _printStatistics():
     print(statistics)
 
 def run():
-    random.seed(11)
+    random.seed(params.LOAD_DATASETS_SEED)
 
     normalSamplesPath = os.path.join(params.PATH_DATABASE, params.FOLDER_NORMAL)
     anomalousSamplesPath = os.path.join(params.PATH_DATABASE, params.FOLDER_ANOMALOUS)
