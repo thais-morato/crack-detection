@@ -95,6 +95,12 @@ def _plotConfusionMatrix(truePositives, falsePositives, trueNegatives, falseNega
                 columns= pd.Index([params.FOLDER_ANOMALOUS, params.FOLDER_NORMAL], name="Actual"))
     sn.heatmap(df_cm, annot=True, fmt='d', cmap="Blues")
 
+def _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives):
+    correctPredictionAmount = truePositives + trueNegatives
+    incorrectPredictionAmount = falsePositives + falseNegatives
+    accuracy = correctPredictionAmount / (correctPredictionAmount + incorrectPredictionAmount) * 100
+    print("Accuracy: %.2f%%" % accuracy)
+
 def run():
     print("applying PCA to train samples...")
     xTrain = _getTrainSamples()
@@ -107,6 +113,7 @@ def run():
     (truePositives, falsePositives, trueNegatives, falseNegatives) = _evaluate(yTest, predictions)
     print("done!")
     _plotConfusionMatrix(truePositives, falsePositives, trueNegatives, falseNegatives)
+    _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives)
     plt.show()
 
 if __name__ == "__main__":
