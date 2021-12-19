@@ -6,6 +6,7 @@
 """
 
 import sys
+import base.params as params
 import matplotlib.pyplot as plt
 import base.constants as consts
 import training.training as train
@@ -26,7 +27,7 @@ def run():
     isTrainingFromScratch = _isTrainingFromScratch()
 
     print("fetching train and validation datasets...")
-    trainSet = prep.getPreprocessedDataset(set=consts.SetEnum.train, applyDataAugmentation=False)
+    trainSet = prep.getPreprocessedDataset(set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
     validationSet = prep.getPreprocessedDataset(set=consts.SetEnum.validation, applyDataAugmentation=False)
 
     print("starting training...")
