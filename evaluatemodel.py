@@ -36,7 +36,7 @@ def _loadModel(modelName):
     else:
         modelFileName = params.MODEL_NAME
     modelFile = os.path.join(consts.AP_FOLDER_MODELS, modelFileName + consts.EXTENSION_MODEL)
-    print("Model: " + modelFileName +  + consts.EXTENSION_MODEL)
+    print("Model: " + modelFileName + consts.EXTENSION_MODEL)
     return load_model(modelFile)
 
 def _getRawAndPreprocessedTestSets():
