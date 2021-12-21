@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 def _getLogPath():
     if params.IS_FINE_TUNING:
-        path = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINE_TUNIING_COMPLEMENT + consts.EXTENSION_LOG)
+        path = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT + consts.EXTENSION_LOG)
     else:
         path = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
     return path
