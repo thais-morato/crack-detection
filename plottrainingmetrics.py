@@ -10,7 +10,11 @@ import base.constants as consts
 import matplotlib.pyplot as plt
 
 def _getLogPath():
-    return os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
+    if params.IS_FINE_TUNING:
+        path = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINE_TUNIING_COMPLEMENT + consts.EXTENSION_LOG)
+    else:
+        path = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
+    return path
 
 def _readLog(path):
     epoch = []

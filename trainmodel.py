@@ -35,9 +35,15 @@ def run():
 
     print("starting training...")
     if isTrainingFromScratch:
-        train.trainModelFromScratch(trainSet, validationSet)
+        if params.IS_FINE_TUNING:
+            train.fineTuneModelFromScratch(trainSet, validationSet)
+        else:
+            train.trainModelFromScratch(trainSet, validationSet)
     else:
-        train.resumeTraining(trainSet, validationSet)
+        if params.IS_FINE_TUNING:
+            train.resumeFineTuning(trainSet, validationSet)
+        else:
+            train.resumeTraining(trainSet, validationSet)
         
     print("done!")
     

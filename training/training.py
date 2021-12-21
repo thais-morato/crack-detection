@@ -51,7 +51,7 @@ def _createFolderStructure(fromScratch, isFineTuning):
             os.mkdir(path)
 
     if isFineTuning:
-        logPath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINETUNIING_COMPLEMENT + consts.EXTENSION_LOG)
+        logPath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT + consts.EXTENSION_LOG)
     else:
         logPath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
     
@@ -60,18 +60,17 @@ def _createFolderStructure(fromScratch, isFineTuning):
 
 def _getModelPath(isFineTuning):
     if isFineTuning:
-        path = os.path.join(consts.AP_FOLDER_MODELS, params.MODEL_NAME + consts.FINETUNIING_COMPLEMENT + consts.EXTENSION_MODEL)
+        path = os.path.join(consts.AP_FOLDER_MODELS, params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT + consts.EXTENSION_MODEL)
     else:
         path = os.path.join(consts.AP_FOLDER_MODELS, params.MODEL_NAME + consts.EXTENSION_MODEL)
     return path
 
-def _getLastCheckpointPath(isFineTuning):
+def _getLastCheckpointPath():
     checkpoints = os.listdir(consts.AP_FOLDER_CHECKPOINTS)
     if len(checkpoints) == 0:
         sys.exit("No model checkpoints were found")
     path = os.path.join(consts.AP_FOLDER_CHECKPOINTS, checkpoints[-1])
-    description = "fine-tuning" if isFineTuning else "training"
-    input("Checkpoint found: " + checkpoints[-1] + ". Press enter to resume " + description)
+    input("Checkpoint found: " + checkpoints[-1] + ". Press enter to resume training")
     return path
 
 def _getInitialEpoch(path):
@@ -79,7 +78,7 @@ def _getInitialEpoch(path):
 
 def _getCallbacks(isFineTuning):
     if isFineTuning:
-        filePath = os.path.join(consts.AP_FOLDER_CHECKPOINTS, params.MODEL_NAME + consts.FINETUNIING_COMPLEMENT + consts.EXTENSION_CHECKPOINT)
+        filePath = os.path.join(consts.AP_FOLDER_CHECKPOINTS, params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT + consts.EXTENSION_CHECKPOINT)
     else:
         filePath = os.path.join(consts.AP_FOLDER_CHECKPOINTS, params.MODEL_NAME + consts.EXTENSION_CHECKPOINT)
     
@@ -89,7 +88,7 @@ def _getCallbacks(isFineTuning):
         verbose=1)
 
     if isFineTuning:
-        filePath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINETUNIING_COMPLEMENT + consts.EXTENSION_LOG)
+        filePath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT + consts.EXTENSION_LOG)
     else:
         filePath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
     
@@ -129,7 +128,7 @@ def trainModelFromScratch(trainSet, validationSet):
 
 def resumeTraining(trainSet, validationSet):
     _createFolderStructure(fromScratch=False, isFineTuning=False)
-    path = _getLastCheckpointPath(isFineTuning=False)
+    path = _getLastCheckpointPath()
     model = load_model(path)
     _compileModel(model)
     callbacks = _getCallbacks(isFineTuning=False)
@@ -149,7 +148,7 @@ def fineTuneModelFromScratch(trainSet, validationSet):
 
 def resumeFineTuning(trainSet, validationSet):
     _createFolderStructure(fromScratch=False, isFineTuning=True)
-    path = _getLastCheckpointPath(isFineTuning=True)
+    path = _getLastCheckpointPath()
     model = load_model(path)
     _compileModel(model)
     callbacks = _getCallbacks(isFineTuning=True)
