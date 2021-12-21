@@ -39,7 +39,7 @@ def _compileModel(model):
         optimizer=optimizer,
         metrics=['accuracy'])
 
-def _createFolderStructure(fromScratch):   
+def _createFolderStructure(fromScratch, isFineTuning):   
     if fromScratch and os.path.isdir(consts.AP_FOLDER_CHECKPOINTS):
         shutil.rmtree(consts.AP_FOLDER_CHECKPOINTS)
     
@@ -50,35 +50,53 @@ def _createFolderStructure(fromScratch):
         if not os.path.isdir(path):
             os.mkdir(path)
 
-    logPath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
+    if isFineTuning:
+        logPath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINETUNIING_COMPLEMENT + consts.EXTENSION_LOG)
+    else:
+        logPath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
+    
     if fromScratch and os.path.isfile(logPath):
         os.remove(logPath)
 
-def _getModelPath():
-    return os.path.join(consts.AP_FOLDER_MODELS, params.MODEL_NAME + consts.EXTENSION_MODEL)
+def _getModelPath(isFineTuning):
+    if isFineTuning:
+        path = os.path.join(consts.AP_FOLDER_MODELS, params.MODEL_NAME + consts.FINETUNIING_COMPLEMENT + consts.EXTENSION_MODEL)
+    else:
+        path = os.path.join(consts.AP_FOLDER_MODELS, params.MODEL_NAME + consts.EXTENSION_MODEL)
+    return path
 
-def _getLastCheckpointPath():
+def _getLastCheckpointPath(isFineTuning):
     checkpoints = os.listdir(consts.AP_FOLDER_CHECKPOINTS)
     if len(checkpoints) == 0:
         sys.exit("No model checkpoints were found")
     path = os.path.join(consts.AP_FOLDER_CHECKPOINTS, checkpoints[-1])
-    input("Checkpoint found: " + checkpoints[-1] + ". Press enter to resume training")
+    description = "fine-tuning" if isFineTuning else "training"
+    input("Checkpoint found: " + checkpoints[-1] + ". Press enter to resume " + description)
     return path
 
 def _getInitialEpoch(path):
     return (int)(path.split("-")[-1].split(consts.EXTENSION_MODEL)[0])
 
-def _getCallbacks():
-    filePath = os.path.join(consts.AP_FOLDER_CHECKPOINTS, params.MODEL_NAME + consts.EXTENSION_CHECKPOINT)
+def _getCallbacks(isFineTuning):
+    if isFineTuning:
+        filePath = os.path.join(consts.AP_FOLDER_CHECKPOINTS, params.MODEL_NAME + consts.FINETUNIING_COMPLEMENT + consts.EXTENSION_CHECKPOINT)
+    else:
+        filePath = os.path.join(consts.AP_FOLDER_CHECKPOINTS, params.MODEL_NAME + consts.EXTENSION_CHECKPOINT)
+    
     checkpoint = ModelCheckpoint(
         filepath=filePath,
         save_freq='epoch',
         verbose=1)
-    filePath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
+
+    if isFineTuning:
+        filePath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINETUNIING_COMPLEMENT + consts.EXTENSION_LOG)
+    else:
+        filePath = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
+    
     log = CSVLogger(filePath, append=True)
     return [checkpoint, log]
 
-def _trainModel(model, trainSet, validationSet, callbacks, initialEpoch=0):
+def _trainModel(model, trainSet, validationSet, callbacks, isFineTuning, initialEpoch=0):
     modelHistory = model.fit(
         trainSet,
         validation_data=validationSet,
@@ -89,7 +107,7 @@ def _trainModel(model, trainSet, validationSet, callbacks, initialEpoch=0):
         initial_epoch=initialEpoch,
         callbacks=callbacks,
         verbose=2)
-    path = _getModelPath()
+    path = _getModelPath(isFineTuning=isFineTuning)
     save_model(model, path)
     return modelHistory
 
@@ -98,20 +116,43 @@ def _buildModel():
     model = _addClassificationLayers(model)
     return model
 
+def _unfreezeModel(model):
+    model.trainable = True
+
 def trainModelFromScratch(trainSet, validationSet):
-    _createFolderStructure(fromScratch=True)
+    _createFolderStructure(fromScratch=True, isFineTuning=False)
     model = _buildModel()
     _compileModel(model)
-    callbacks = _getCallbacks()
-    modelHistory = _trainModel(model, trainSet, validationSet, callbacks)
+    callbacks = _getCallbacks(isFineTuning=False)
+    modelHistory = _trainModel(model, trainSet, validationSet, callbacks, isFineTuning=False)
     return modelHistory
 
 def resumeTraining(trainSet, validationSet):
-    _createFolderStructure(fromScratch=False)
-    path = _getLastCheckpointPath()
+    _createFolderStructure(fromScratch=False, isFineTuning=False)
+    path = _getLastCheckpointPath(isFineTuning=False)
     model = load_model(path)
     _compileModel(model)
-    callbacks = _getCallbacks()
+    callbacks = _getCallbacks(isFineTuning=False)
     initialEpoch = _getInitialEpoch(path)
-    modelHistory = _trainModel(model, trainSet, validationSet, callbacks, initialEpoch)
+    modelHistory = _trainModel(model, trainSet, validationSet, callbacks, isFineTuning=False, initialEpoch=initialEpoch)
+    return modelHistory
+
+def fineTuneModelFromScratch(trainSet, validationSet):
+    _createFolderStructure(fromScratch=True, isFineTuning=True)
+    originalModelPath = _getModelPath(isFineTuning=False)
+    model = load_model(originalModelPath)
+    _unfreezeModel(model)
+    _compileModel(model)
+    callbacks = _getCallbacks(isFineTuning=True)
+    modelHistory = _trainModel(model, trainSet, validationSet, callbacks, isFineTuning=True)
+    return modelHistory
+
+def resumeFineTuning(trainSet, validationSet):
+    _createFolderStructure(fromScratch=False, isFineTuning=True)
+    path = _getLastCheckpointPath(isFineTuning=True)
+    model = load_model(path)
+    _compileModel(model)
+    callbacks = _getCallbacks(isFineTuning=True)
+    initialEpoch = _getInitialEpoch(path)
+    modelHistory = _trainModel(model, trainSet, validationSet, callbacks, isFineTuning=True, initialEpoch=initialEpoch)
     return modelHistory

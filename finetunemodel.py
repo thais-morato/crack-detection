@@ -1,6 +1,6 @@
 """
 
-    Run this file to train a CNN Model based on the datasets you created previously
+    Run this file to fine-tune a CNN Model based on the datasets you created previously
     with loaddatasets.py.
     
 """
@@ -11,9 +11,9 @@ import base.constants as consts
 import training.training as train
 import preprocessing.preprocessing as prep
 
-def _isTrainingFromScratch():
+def _isFineTuningFromScratch():
     while True:
-        option = input("Would you like to train model from scratch or resume training? " +
+        option = input("Would you like to fine-tune model from scratch or resume fine-tuning? " +
             "[" + consts.TRAIN_OPTION_SCRATCH + "/" + consts.TRAIN_OPTION_RESUME + "/" +
             consts.OPTION_CANCEL + "]: ")
         if option == consts.OPTION_CANCEL:
@@ -23,7 +23,7 @@ def _isTrainingFromScratch():
     return option == consts.TRAIN_OPTION_SCRATCH
 
 def run():
-    isTrainingFromScratch = _isTrainingFromScratch()
+    isFineTuningFromScratch = _isFineTuningFromScratch()
 
     print("fetching train and validation datasets...")
     if(params.APPLY_PREPROCESSING):
@@ -33,11 +33,11 @@ def run():
         trainSet = prep.getRawDataset(set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
         validationSet = prep.getRawDataset(set=consts.SetEnum.validation, applyDataAugmentation=False)
 
-    print("starting training...")
-    if isTrainingFromScratch:
-        train.trainModelFromScratch(trainSet, validationSet)
+    print("starting fine-tuning...")
+    if isFineTuningFromScratch:
+        train.fineTuneModelFromScratch(trainSet, validationSet)
     else:
-        train.resumeTraining(trainSet, validationSet)
+        train.resumeFineTuning(trainSet, validationSet)
         
     print("done!")
     
