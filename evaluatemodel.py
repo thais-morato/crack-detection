@@ -6,7 +6,7 @@
 
 """
 
-import os
+import os, sys
 import pandas as pd
 import seaborn as sn
 import base.params as params
@@ -22,8 +22,21 @@ class _RawAndPreprocessedImage:
         self.raw = raw
         self.prep = prep
 
-def _loadModel():
-    modelFile = os.path.join(consts.AP_FOLDER_MODELS, params.MODEL_NAME + consts.EXTENSION_MODEL)
+def _getModelName():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    else:
+        return None
+
+def _loadModel(modelName):
+    if modelName != None:
+        modelFileName = modelName
+    elif params.IS_FINE_TUNING:
+        modelFileName = params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT
+    else:
+        modelFileName = params.MODEL_NAME
+    modelFile = os.path.join(consts.AP_FOLDER_MODELS, modelFileName + consts.EXTENSION_MODEL)
+    print("Model: " + modelFileName +  + consts.EXTENSION_MODEL)
     return load_model(modelFile)
 
 def _getRawAndPreprocessedTestSets():
@@ -94,7 +107,8 @@ def _plotExamples(title, rawAndPreprocessedImages):
     fig.show()
 
 def run():
-    model = _loadModel()
+    modelName = _getModelName()
+    model = _loadModel(modelName)
     (rawTestSet, testSet) = _getRawAndPreprocessedTestSets()
     (positiveValue, negativeValue) = _getReferenceValues(testSet)
     (truePositives,

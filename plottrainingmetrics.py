@@ -4,17 +4,27 @@
     
 """
 
-import os, csv
+import os, csv, sys
 import base.params as params
 import base.constants as consts
 import matplotlib.pyplot as plt
 
-def _getLogPath():
-    if params.IS_FINE_TUNING:
-        path = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT + consts.EXTENSION_LOG)
+def _getModelName():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
     else:
-        path = os.path.join(consts.AP_FOLDER_LOG, params.MODEL_NAME + consts.EXTENSION_LOG)
-    return path
+        return None
+
+def _getLogPath(modelName):
+    if modelName != None:
+        modelFileName = modelName
+    elif params.IS_FINE_TUNING:
+        modelFileName = params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT
+    else:
+        modelFileName = params.MODEL_NAME
+    logPath = os.path.join(consts.AP_FOLDER_LOG, modelFileName + consts.EXTENSION_LOG)
+    print("Model: " + modelFileName + consts.EXTENSION_MODEL)
+    return logPath
 
 def _readLog(path):
     epoch = []
@@ -37,11 +47,6 @@ def _readLog(path):
             metric.append(row[i])
     
     return metrics
-
-def run():
-    path = _getLogPath()
-    metrics = _readLog(path)
-    _plotMetrics(metrics)
 
 def _plotMetrics(metrics):
     (epoch, accuracy, loss, val_accuracy, val_loss) = metrics
@@ -79,6 +84,12 @@ def _plotLossMetrics(epoch, loss, val_loss):
     plt.xlim(min(plt_epoch), max(plt_epoch))
     plt.legend(['Training', 'Validation'], loc='upper left')
     fig.show()
+
+def run():
+    modelName = _getModelName()
+    path = _getLogPath(modelName)
+    metrics = _readLog(path)
+    _plotMetrics(metrics)
 
 if __name__ == "__main__":
     run()
