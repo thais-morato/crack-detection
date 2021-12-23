@@ -110,7 +110,7 @@ def _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives)
     print("Accuracy: %.2f%%" % accuracy)
 
 def run():
-    print("Number of components: " + params.PCA_COMPONENTS)
+    print("Number of components: " + str(params.PCA_COMPONENTS))
     print("applying PCA to train samples...")
     xTrain = _getTrainSamples()
     pca = _getPca(xTrain)
