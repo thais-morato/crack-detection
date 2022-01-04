@@ -98,7 +98,7 @@ def _getModelName():
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
-        exit("Model name missing in arguments")
+        sys.exit("Model name missing in arguments")
 
 def _getDatasetPath():
     if len(sys.argv) > 2:

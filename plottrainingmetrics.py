@@ -13,7 +13,7 @@ def _getModelName():
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
-        exit("Model name missing in arguments")
+        sys.exit("Model name missing in arguments")
 
 def _getLogPath(modelName):
     logPath = os.path.join(consts.AP_FOLDER_LOG, modelName + consts.EXTENSION_LOG)
