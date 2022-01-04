@@ -22,12 +22,6 @@ class _RawAndPreprocessedImage:
         self.raw = raw
         self.prep = prep
 
-def _getModelName():
-    if len(sys.argv) > 1:
-        return sys.argv[1]
-    else:
-        return None
-
 def _loadModel(modelName):
     if modelName != None:
         modelFileName = modelName
@@ -106,16 +100,22 @@ def _plotExamples(title, rawAndPreprocessedImages):
     plt.suptitle(title)
     fig.show()
 
-def _getDatasetPath():
+def _getModelName():
     if len(sys.argv) > 1:
         return sys.argv[1]
+    else:
+        return None
+
+def _getDatasetPath():
+    if len(sys.argv) > 2:
+        return sys.argv[2]
     else:
         return consts.AP_PATH_DATASET
 
 def run():
+    modelName = _getModelName()
     datasetPath = _getDatasetPath()
 
-    modelName = _getModelName()
     model = _loadModel(modelName)
     (rawTestSet, testSet) = _getRawAndPreprocessedTestSets(datasetPath)
     (positiveValue, negativeValue) = _getReferenceValues(testSet)
