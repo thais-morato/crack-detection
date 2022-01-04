@@ -22,15 +22,22 @@ def _isTrainingFromScratch():
             break
     return option == consts.TRAIN_OPTION_SCRATCH
 
-def _getDatasetPath():
+def _getModelName():
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
-        return consts.AP_PATH_DATASET
+        sys.exit("Model name missing in arguments")
+
+def _getDatasetPath():
+    if len(sys.argv) > 2:
+        return sys.argv[2]
+    else:
+        sys.exit("Dataset path missing in arguments")
 
 def run():
     isTrainingFromScratch = _isTrainingFromScratch()
 
+    modelName = _getModelName()
     datasetPath = _getDatasetPath()
     print("dataset: " + datasetPath)
     print("fetching train and validation datasets...")
@@ -44,14 +51,14 @@ def run():
     print("starting training...")
     if isTrainingFromScratch:
         if params.IS_FINE_TUNING:
-            train.fineTuneModelFromScratch(trainSet, validationSet)
+            train.fineTuneModelFromScratch(modelName, trainSet, validationSet)
         else:
-            train.trainModelFromScratch(trainSet, validationSet)
+            train.trainModelFromScratch(modelName, trainSet, validationSet)
     else:
         if params.IS_FINE_TUNING:
-            train.resumeFineTuning(trainSet, validationSet)
+            train.resumeFineTuning(modelName, trainSet, validationSet)
         else:
-            train.resumeTraining(trainSet, validationSet)
+            train.resumeTraining(modelName, trainSet, validationSet)
         
     print("done!")
     

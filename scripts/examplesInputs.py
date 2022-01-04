@@ -43,7 +43,7 @@ def _getDatasetPath():
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
-        return consts.AP_PATH_DATASET
+        sys.exit("Dataset path missing in arguments")
 
 def run():
     plot = _Plot()
