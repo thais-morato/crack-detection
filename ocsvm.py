@@ -113,7 +113,7 @@ def _getNumberOfComponents():
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
-        exit("Number of components missing in arguments")
+        sys.exit("Number of components missing in arguments")
 
 def run():
     numberOfComponents = _getNumberOfComponents()
