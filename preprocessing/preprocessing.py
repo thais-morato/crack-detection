@@ -10,16 +10,16 @@ import base.constants as consts
 from keras.applications.vgg16 import preprocess_input
 from keras.preprocessing.image import ImageDataGenerator
 
-def _getDirectory(set):
+def _getDirectory(path, set):
     if set == consts.SetEnum.train:
-        return _getSetDirectory(consts.AP_FOLDER_TRAIN)
+        return _getSetDirectory(path, consts.AP_FOLDER_TRAIN)
     elif set == consts.SetEnum.validation:
-        return _getSetDirectory(consts.AP_FOLDER_VALIDATION)
+        return _getSetDirectory(path, consts.AP_FOLDER_VALIDATION)
     else:
-        return _getSetDirectory(consts.AP_FOLDER_TEST)
+        return _getSetDirectory(path, consts.AP_FOLDER_TEST)
 
-def _getSetDirectory(setFolder):
-    return os.path.join(consts.AP_PATH_DATASET, setFolder)
+def _getSetDirectory(path, setFolder):
+    return os.path.join(path, setFolder)
 
 def _getDataset(directory, preprocessingFunction, applyDataAugmentation):
     dataGenerator = _getDataGenerator(preprocessingFunction, applyDataAugmentation)
@@ -49,12 +49,12 @@ def _getDataGeneratorWithAugmentation(preprocessingFunction):
         horizontal_flip=True,
         vertical_flip=True)
 
-def getPreprocessedDataset(set, applyDataAugmentation=False):
-    directory = _getDirectory(set)
+def getPreprocessedDataset(path, set, applyDataAugmentation=False):
+    directory = _getDirectory(path, set)
     dataset = _getDataset(directory, preprocess_input, applyDataAugmentation)
     return dataset
 
-def getRawDataset(set, applyDataAugmentation=False):
-    directory = _getDirectory(set)
+def getRawDataset(path, set, applyDataAugmentation=False):
+    directory = _getDirectory(path, set)
     dataset = _getDataset(directory, None, applyDataAugmentation)
     return dataset

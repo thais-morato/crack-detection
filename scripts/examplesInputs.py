@@ -39,11 +39,18 @@ class _Plot:
 def _getClassName(class_indices, value):
     return list(class_indices.keys())[list(class_indices.values()).index(value)]
 
+def _getDatasetPath():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    else:
+        return consts.AP_PATH_DATASET
+
 def run():
     plot = _Plot()
-    trainSet = prep.getPreprocessedDataset(set=consts.SetEnum.train, applyDataAugmentation=False)
+    datasetPath = _getDatasetPath()
+    trainSet = prep.getPreprocessedDataset(path=datasetPath, set=consts.SetEnum.train, applyDataAugmentation=False)
     plot.plotExamples(trainSet)
-    rawTrainSet = prep.getRawDataset(set=consts.SetEnum.train, applyDataAugmentation=False)
+    rawTrainSet = prep.getRawDataset(path=datasetPath, set=consts.SetEnum.train, applyDataAugmentation=False)
     plot.plotExamples(rawTrainSet)
     plot.showPlots()
 

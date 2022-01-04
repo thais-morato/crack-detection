@@ -22,16 +22,24 @@ def _isTrainingFromScratch():
             break
     return option == consts.TRAIN_OPTION_SCRATCH
 
+def _getDatasetPath():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    else:
+        return consts.AP_PATH_DATASET
+
 def run():
     isTrainingFromScratch = _isTrainingFromScratch()
 
+    datasetPath = _getDatasetPath()
+    print("dataset: " + datasetPath)
     print("fetching train and validation datasets...")
     if(params.APPLY_PREPROCESSING):
-        trainSet = prep.getPreprocessedDataset(set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
-        validationSet = prep.getPreprocessedDataset(set=consts.SetEnum.validation, applyDataAugmentation=False)
+        trainSet = prep.getPreprocessedDataset(path=datasetPath, set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
+        validationSet = prep.getPreprocessedDataset(path=datasetPath, set=consts.SetEnum.validation, applyDataAugmentation=False)
     else:
-        trainSet = prep.getRawDataset(set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
-        validationSet = prep.getRawDataset(set=consts.SetEnum.validation, applyDataAugmentation=False)
+        trainSet = prep.getRawDataset(path=datasetPath, set=consts.SetEnum.train, applyDataAugmentation=params.APPLY_DATA_AUGMENTATION)
+        validationSet = prep.getRawDataset(path=datasetPath, set=consts.SetEnum.validation, applyDataAugmentation=False)
 
     print("starting training...")
     if isTrainingFromScratch:

@@ -39,12 +39,12 @@ def _loadModel(modelName):
     print("Model: " + modelFileName + consts.EXTENSION_MODEL)
     return load_model(modelFile)
 
-def _getRawAndPreprocessedTestSets():
-    rawTestSet = prep.getRawDataset(set=consts.SetEnum.test, applyDataAugmentation=False)
+def _getRawAndPreprocessedTestSets(datasetPath):
+    rawTestSet = prep.getRawDataset(path=datasetPath, set=consts.SetEnum.test, applyDataAugmentation=False)
     if(params.APPLY_PREPROCESSING):
-        testSet = prep.getPreprocessedDataset(set=consts.SetEnum.test, applyDataAugmentation=False)
+        testSet = prep.getPreprocessedDataset(path=datasetPath, set=consts.SetEnum.test, applyDataAugmentation=False)
     else:
-        testSet = prep.getRawDataset(set=consts.SetEnum.test, applyDataAugmentation=False)
+        testSet = prep.getRawDataset(path=datasetPath, set=consts.SetEnum.test, applyDataAugmentation=False)
     return (rawTestSet, testSet)
 
 def _getReferenceValues(dataset):
@@ -106,10 +106,18 @@ def _plotExamples(title, rawAndPreprocessedImages):
     plt.suptitle(title)
     fig.show()
 
+def _getDatasetPath():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    else:
+        return consts.AP_PATH_DATASET
+
 def run():
+    datasetPath = _getDatasetPath()
+
     modelName = _getModelName()
     model = _loadModel(modelName)
-    (rawTestSet, testSet) = _getRawAndPreprocessedTestSets()
+    (rawTestSet, testSet) = _getRawAndPreprocessedTestSets(datasetPath)
     (positiveValue, negativeValue) = _getReferenceValues(testSet)
     (truePositives,
         falsePositives,
