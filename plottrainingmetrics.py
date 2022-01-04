@@ -13,17 +13,11 @@ def _getModelName():
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
-        return None
+        exit("Model name missing in arguments")
 
 def _getLogPath(modelName):
-    if modelName != None:
-        modelFileName = modelName
-    elif params.IS_FINE_TUNING:
-        modelFileName = params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT
-    else:
-        modelFileName = params.MODEL_NAME
-    logPath = os.path.join(consts.AP_FOLDER_LOG, modelFileName + consts.EXTENSION_LOG)
-    print("Model: " + modelFileName + consts.EXTENSION_MODEL)
+    logPath = os.path.join(consts.AP_FOLDER_LOG, modelName + consts.EXTENSION_LOG)
+    print("Model: " + modelName + consts.EXTENSION_MODEL)
     return logPath
 
 def _readLog(path):

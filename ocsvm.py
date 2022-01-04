@@ -1,4 +1,4 @@
-import os
+import os, sys
 import numpy as np
 import pandas as pd
 import seaborn as sn
@@ -26,8 +26,8 @@ def _getFilePaths(subset, isAnomalous):
                         classFolder)
     return [os.path.join(folder, img) for img in os.listdir(folder)]
 
-def _getPca(x):
-    pca = PCA(n_components=params.PCA_COMPONENTS)
+def _getPca(numberOfComponents, x):
+    pca = PCA(n_components=numberOfComponents)
     pca.fit(x)
     return pca
 
@@ -109,11 +109,18 @@ def _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives)
     accuracy = correctPredictionAmount / (correctPredictionAmount + incorrectPredictionAmount) * 100
     print("Accuracy: %.2f%%" % accuracy)
 
+def _getNumberOfComponents():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    else:
+        exit("Number of components missing in arguments")
+
 def run():
-    print("Number of components: " + str(params.PCA_COMPONENTS))
+    numberOfComponents = _getNumberOfComponents()
+    print("Number of components: " + str(numberOfComponents))
     print("applying PCA to train samples...")
     xTrain = _getTrainSamples()
-    pca = _getPca(xTrain)
+    pca = _getPca(numberOfComponents, xTrain)
     print("training OC-SVM...")
     ocSvm = _trainOcSvm(xTrain, pca)
     print("evaluating OC-SVM...")

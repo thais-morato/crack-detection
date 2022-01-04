@@ -23,14 +23,8 @@ class _RawAndPreprocessedImage:
         self.prep = prep
 
 def _loadModel(modelName):
-    if modelName != None:
-        modelFileName = modelName
-    elif params.IS_FINE_TUNING:
-        modelFileName = params.MODEL_NAME + consts.FINE_TUNING_COMPLEMENT
-    else:
-        modelFileName = params.MODEL_NAME
-    modelFile = os.path.join(consts.AP_FOLDER_MODELS, modelFileName + consts.EXTENSION_MODEL)
-    print("Model: " + modelFileName + consts.EXTENSION_MODEL)
+    modelFile = os.path.join(consts.AP_FOLDER_MODELS, modelName + consts.EXTENSION_MODEL)
+    print("Model: " + modelName + consts.EXTENSION_MODEL)
     return load_model(modelFile)
 
 def _getRawAndPreprocessedTestSets(datasetPath):
@@ -104,7 +98,7 @@ def _getModelName():
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
-        return None
+        exit("Model name missing in arguments")
 
 def _getDatasetPath():
     if len(sys.argv) > 2:
