@@ -147,9 +147,15 @@ def _undersampleAnomaliesInTrainingSet(pathDataset, undersamplingPercentage):
 
 def _getUndersamplingAnomaliesPercentages():
     if len(sys.argv) > 1:
-        return [int(x) for x in sys.argv[1:]]
+        return [float(x) for x in sys.argv[1:]]
     else:
         return None
+
+def percentageToString(x):
+    if float.is_integer(x):
+        return '{:0>2}'.format(int(x))
+    else:
+        return '{:0>5.2f}'.format(x)
 
 def _loadDatasetsWithoutUndersampling(normalSamplesPath, anomalousSamplesPath):
     print("dataset: " + consts.AP_PATH_DATASET)
@@ -164,7 +170,7 @@ def _loadDatasetsWithoutUndersampling(normalSamplesPath, anomalousSamplesPath):
     _printStatistics(consts.AP_PATH_DATASET)
 
 def _loadDatasetsUndersamplingAnomalies(normalSamplesPath, anomalousSamplesPath, undersamplingPercentage):
-    pathDataset = consts.AP_PATH_DATASET + "-an-" + str(undersamplingPercentage)
+    pathDataset = consts.AP_PATH_DATASET + "-an-" + percentageToString(undersamplingPercentage)
     print("dataset: " + pathDataset)
     print("creating folder structure...")
     _createFolderStructure(pathDataset)
