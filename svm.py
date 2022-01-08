@@ -9,7 +9,7 @@ from sklearn.svm import OneClassSVM, SVC
 from sklearn.decomposition import PCA
 
 def _getFilePaths(datasetPath, subset, isAnomalous):
-    if subset == consts.SetEnum.test:
+    if subset == consts.SetEnum.train:
         subsetFolder = consts.AP_FOLDER_TRAIN
     elif subset == consts.SetEnum.validation:
         subsetFolder = consts.AP_FOLDER_VALIDATION
@@ -124,7 +124,7 @@ def _isOneClass():
 
 def _getNumberOfComponents():
     if len(sys.argv) > 2:
-        return sys.argv[2]
+        return int(sys.argv[2])
     else:
         sys.exit("Number of components missing in arguments")
 
@@ -139,7 +139,7 @@ def run():
     algorithmName = "OC-SVM" if isOneClass else "SVM"
     numberOfComponents = _getNumberOfComponents()
     datasetPath = _getDatasetPath()
-    print("Number of components: " + str(numberOfComponents))
+    print("number of components: " + str(numberOfComponents))
     print("applying PCA to train samples...")
     xTrain, yTrain = _getSamples(datasetPath, consts.SetEnum.train)
     pca = _getPca(numberOfComponents, xTrain)
