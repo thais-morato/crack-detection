@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
 import seaborn as sn
-import os, sys, random
+import os, sys, random, cv2
 import base.params as params
 import matplotlib.pyplot as plt
 import base.constants as consts
 from sklearn.svm import OneClassSVM, SVC
-from sklearn.decomposition import PCA
+from sklearn.decomposition import IncrementalPCA
 
 def _getFilePaths(datasetPath, subset, isAnomalous):
     if subset == consts.SetEnum.train:
@@ -26,54 +26,67 @@ def _getFilePaths(datasetPath, subset, isAnomalous):
                         classFolder)
     return [os.path.join(folder, img) for img in os.listdir(folder)]
 
-def _getPca(numberOfComponents, x):
-    pca = PCA(n_components=numberOfComponents)
-    pca.fit(x)
-    return pca
-
-def _getSamples(datasetPath, subset):
-    anomalousFiles = _getFilePaths(datasetPath, subset, True)
+def _getSamplesPath(datasetPath, subset):
     normalFiles = _getFilePaths(datasetPath, subset, False)
-    x = []
-    y = []
-    for file in normalFiles:
-        img = plt.imread(file)
-        img = img.reshape(img.shape[0]*img.shape[1]*img.shape[2])
-        x.append(img)
-        y.append(1)
-    for file in anomalousFiles:
-        img = plt.imread(file)
-        img = img.reshape(img.shape[0]*img.shape[1]*img.shape[2])
-        x.append(img)
-        y.append(-1)
+    anomalousFiles = _getFilePaths(datasetPath, subset, True)
+    xPaths = normalFiles + anomalousFiles
+    y = [1 for _ in normalFiles] + [-1 for _ in anomalousFiles]
     random.seed(8)
-    random.shuffle(x)
+    random.shuffle(xPaths)
     random.seed(8)
     random.shuffle(y)
+    return xPaths, y
+
+def _getBatchSize(numberOfComponents):
+    batchSize = max(numberOfComponents, params.BATCH_SIZE)
+    return batchSize
+
+def _getBatches(xPaths, batchSize):
+    nBatches = int(np.ceil(len(xPaths)/batchSize))
+    return list(range(nBatches))
+
+def _getBatch(xPaths, y, batchSize, batch):
+    initial = batch*batchSize
+    final = min(initial + batchSize, len(xPaths))
+    batchPaths = xPaths[initial:final]
+    xBatch = []
+    for file in batchPaths:
+        img = cv2.imread(file)
+        img = cv2.resize(img, consts.TARGET_IMAGE_SIZE)
+        img = np.array(img).flatten()
+        xBatch.append(img)
+    yBatch = y[initial:final]
+    return xBatch, yBatch
+
+def _getPca(xPaths, y, numberOfComponents, batchSize):
+    batches = _getBatches(xPaths, batchSize)
+    pca = IncrementalPCA(n_components=numberOfComponents, batch_size=batchSize)
+    for batch in batches:
+        xBatch, yBatch = _getBatch(xPaths, y, batchSize, batch)
+        pca.partial_fit(xBatch)
+    return pca
+
+def _getSamples(xPaths, y, pca, batchSize):
+    batches = _getBatches(xPaths, batchSize)
+    x = []
+    for batch in batches:
+        xBatch, yBatch = _getBatch(xPaths, y, batchSize, batch)
+        xTransformedBatch = pca.transform(xBatch)
+        x.extend(xTransformedBatch)
     return x, y
 
-def _trainOcSvm(x, pca):
-    transformedX = pca.transform(x)
-    ocSvm = OneClassSVM(kernel="sigmoid", gamma="auto")
-    ocSvm.fit(transformedX)
+def _trainOcSvm(x):
+    ocSvm = OneClassSVM(kernel="linear", gamma="scale")
+    ocSvm.fit(x)
     return ocSvm
 
-def _trainSvm(x, y, pca):
-    transformedX = pca.transform(x)
-    svm = SVC(kernel="sigmoid", gamma="auto")
-    svm.fit(transformedX, y)
+def _trainSvm(x, y):
+    svm = SVC(kernel="linear", gamma="scale")
+    svm.fit(x, y)
     return svm
 
-def _predict(x, pca, model):
-    predictions = []
-    nBatches = int(np.ceil(len(x)/params.BATCH_SIZE))
-    for i in range(nBatches):
-        initial = i*params.BATCH_SIZE
-        final = min(initial + params.BATCH_SIZE, len(x))
-        xBatch = x[initial:final]
-        transformedX = pca.transform(xBatch)
-        predictionsBatch = model.predict(transformedX)
-        predictions.extend(predictionsBatch)
+def _predict(xTest, model):
+    predictions = model.predict(xTest)
     return predictions
 
 def _evaluate(y, predictions):
@@ -122,36 +135,43 @@ def _isOneClass():
     else:
         sys.exit("Algorithm (\"svm\"/\"ocsvm\") missing in arguments")
 
-def _getNumberOfComponents():
-    if len(sys.argv) > 2:
-        return int(sys.argv[2])
-    else:
-        sys.exit("Number of components missing in arguments")
-
 def _getDatasetPath():
-    if len(sys.argv) > 3:
-        return sys.argv[3]
+    if len(sys.argv) > 2:
+        return sys.argv[2]
     else:
         sys.exit("Dataset path missing in arguments")
+
+def _getNumberOfComponents():
+    if len(sys.argv) > 3:
+        return int(sys.argv[3])
+    else:
+        sys.exit("Number of components missing in arguments")
 
 def run():
     isOneClass = _isOneClass()
     algorithmName = "OC-SVM" if isOneClass else "SVM"
-    numberOfComponents = _getNumberOfComponents()
     datasetPath = _getDatasetPath()
+    numberOfComponents = _getNumberOfComponents()
+    batchSize = _getBatchSize(numberOfComponents)
     print("number of components: " + str(numberOfComponents))
-    print("applying PCA to train samples...")
-    xTrain, yTrain = _getSamples(datasetPath, consts.SetEnum.train)
-    pca = _getPca(numberOfComponents, xTrain)
+
+    print("training PCA...")
+    xTrainPaths, yTrain = _getSamplesPath(datasetPath, consts.SetEnum.train)
+    pca = _getPca(xTrainPaths, yTrain, numberOfComponents, batchSize)
+
     print("training " + algorithmName + "...")
+    xTrain, yTrain = _getSamples(xTrainPaths, yTrain, pca, batchSize)
     if isOneClass:
-        model = _trainOcSvm(xTrain, pca)
+        model = _trainOcSvm(xTrain, yTrain)
     else:
-        model = _trainSvm(xTrain, yTrain, pca)
+        model = _trainSvm(xTrain, yTrain)
+    
     print("evaluating " + algorithmName + "...")
-    xTest, yTest = _getSamples(datasetPath, consts.SetEnum.test)
-    predictions = _predict(xTest, pca, model)
+    xTestPaths, yTest = _getSamplesPath(datasetPath, consts.SetEnum.test)
+    xTest, yTest = _getSamples(xTestPaths, yTest, pca, batchSize)
+    predictions = _predict(xTest, model)
     (truePositives, falsePositives, trueNegatives, falseNegatives) = _evaluate(yTest, predictions)
+
     print("done!")
     _plotConfusionMatrix(truePositives, falsePositives, trueNegatives, falseNegatives)
     _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives)
