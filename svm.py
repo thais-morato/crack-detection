@@ -1,14 +1,14 @@
-import os, sys
 import numpy as np
 import pandas as pd
 import seaborn as sn
+import os, sys, random
 import base.params as params
 import matplotlib.pyplot as plt
 import base.constants as consts
-from sklearn.svm import OneClassSVM
+from sklearn.svm import OneClassSVM, SVC
 from sklearn.decomposition import PCA
 
-def _getFilePaths(subset, isAnomalous):
+def _getFilePaths(datasetPath, subset, isAnomalous):
     if subset == consts.SetEnum.test:
         subsetFolder = consts.AP_FOLDER_TRAIN
     elif subset == consts.SetEnum.validation:
@@ -21,7 +21,7 @@ def _getFilePaths(subset, isAnomalous):
     else:
         classFolder = consts.AP_FOLDER_NORMAL
     
-    folder = os.path.join(consts.AP_PATH_DATASET,
+    folder = os.path.join(datasetPath,
                         subsetFolder,
                         classFolder)
     return [os.path.join(folder, img) for img in os.listdir(folder)]
@@ -31,24 +31,9 @@ def _getPca(numberOfComponents, x):
     pca.fit(x)
     return pca
 
-def _getTrainSamples():
-    normalFiles = _getFilePaths(consts.SetEnum.train, False)
-    x = []
-    for file in normalFiles:
-        img = plt.imread(file)
-        img = img.reshape(img.shape[0]*img.shape[1]*img.shape[2])
-        x.append(img)
-    return x
-
-def _trainOcSvm(x, pca):
-    transformedX = pca.transform(x)
-    ocSvm = OneClassSVM(kernel="sigmoid", gamma="auto")
-    ocSvm.fit(transformedX)
-    return ocSvm
-
-def _getTestSamples():
-    anomalousFiles = _getFilePaths(consts.SetEnum.test, True)
-    normalFiles = _getFilePaths(consts.SetEnum.test, False)
+def _getSamples(datasetPath, subset):
+    anomalousFiles = _getFilePaths(datasetPath, subset, True)
+    normalFiles = _getFilePaths(datasetPath, subset, False)
     x = []
     y = []
     for file in normalFiles:
@@ -61,9 +46,25 @@ def _getTestSamples():
         img = img.reshape(img.shape[0]*img.shape[1]*img.shape[2])
         x.append(img)
         y.append(-1)
+    random.seed(8)
+    random.shuffle(x)
+    random.seed(8)
+    random.shuffle(y)
     return x, y
 
-def _predict(x, pca, ocSvm):
+def _trainOcSvm(x, pca):
+    transformedX = pca.transform(x)
+    ocSvm = OneClassSVM(kernel="sigmoid", gamma="auto")
+    ocSvm.fit(transformedX)
+    return ocSvm
+
+def _trainSvm(x, y, pca):
+    transformedX = pca.transform(x)
+    svm = SVC(kernel="sigmoid", gamma="auto")
+    svm.fit(transformedX, y)
+    return svm
+
+def _predict(x, pca, model):
     predictions = []
     nBatches = int(np.ceil(len(x)/params.BATCH_SIZE))
     for i in range(nBatches):
@@ -71,7 +72,7 @@ def _predict(x, pca, ocSvm):
         final = min(initial + params.BATCH_SIZE, len(x))
         xBatch = x[initial:final]
         transformedX = pca.transform(xBatch)
-        predictionsBatch = ocSvm.predict(transformedX)
+        predictionsBatch = model.predict(transformedX)
         predictions.extend(predictionsBatch)
     return predictions
 
@@ -109,23 +110,47 @@ def _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives)
     accuracy = correctPredictionAmount / (correctPredictionAmount + incorrectPredictionAmount) * 100
     print("Accuracy: %.2f%%" % accuracy)
 
-def _getNumberOfComponents():
+def _isOneClass():
     if len(sys.argv) > 1:
-        return sys.argv[1]
+        algorithm = sys.argv[1]
+        if algorithm == "ocsvm":
+            return True
+        elif algorithm == "svm":
+            return False
+        else:
+            sys.exit("Invalid algorithm in arguments. Please chose either \"svm\" or \"ocsvm\"")
+    else:
+        sys.exit("Algorithm (\"svm\"/\"ocsvm\") missing in arguments")
+
+def _getNumberOfComponents():
+    if len(sys.argv) > 2:
+        return sys.argv[2]
     else:
         sys.exit("Number of components missing in arguments")
 
+def _getDatasetPath():
+    if len(sys.argv) > 3:
+        return sys.argv[3]
+    else:
+        sys.exit("Dataset path missing in arguments")
+
 def run():
+    isOneClass = _isOneClass()
+    algorithmName = "OC-SVM" if isOneClass else "SVM"
     numberOfComponents = _getNumberOfComponents()
+    datasetPath = _getDatasetPath()
     print("Number of components: " + str(numberOfComponents))
     print("applying PCA to train samples...")
-    xTrain = _getTrainSamples()
+    xTrain, yTrain = _getSamples(datasetPath, consts.SetEnum.train)
     pca = _getPca(numberOfComponents, xTrain)
-    print("training OC-SVM...")
-    ocSvm = _trainOcSvm(xTrain, pca)
-    print("evaluating OC-SVM...")
-    xTest, yTest = _getTestSamples()
-    predictions = _predict(xTest, pca, ocSvm)
+    print("training " + algorithmName + "...")
+    if isOneClass:
+        model = _trainOcSvm(xTrain, pca)
+    else:
+        model = _trainSvm(xTrain, yTrain, pca)
+    print("evaluating " + algorithmName + "...")
+    xTest, yTest = _getSamples(datasetPath, consts.SetEnum.test)
+    predictions = _predict(xTest, pca, model)
     (truePositives, falsePositives, trueNegatives, falseNegatives) = _evaluate(yTest, predictions)
     print("done!")
     _plotConfusionMatrix(truePositives, falsePositives, trueNegatives, falseNegatives)
