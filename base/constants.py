@@ -5,6 +5,13 @@ class SetEnum(Enum):
     validation = 1
     test = 2
 
+class AlgorithmEnum(Enum):
+    svm = 0
+    ocsvm = 1
+    sgdocsvm = 2
+    lof = 3
+    gnbayes = 4
+
 TRAIN_OPTION_SCRATCH = 'scratch'
 TRAIN_OPTION_RESUME = 'resume'
 OPTION_CANCEL = 'cancel'

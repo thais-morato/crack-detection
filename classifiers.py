@@ -5,7 +5,10 @@ import os, sys, random, cv2
 import base.params as params
 import matplotlib.pyplot as plt
 import base.constants as consts
-from sklearn.svm import OneClassSVM, SVC
+from sklearn.svm import SVC, OneClassSVM
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import SGDOneClassSVM
+from sklearn.neighbors import LocalOutlierFactor
 from sklearn.decomposition import IncrementalPCA
 
 def _getFilePaths(datasetPath, subset, isAnomalous):
@@ -77,15 +80,30 @@ def _getSamples(xPaths, y, pca, batchSize, numberOfComponents):
         x.extend(xTransformedBatch)
     return x, y[:len(x)]
 
+def _trainSvm(x, y):
+    svm = SVC(kernel="linear", gamma="scale")
+    svm.fit(x, y)
+    return svm
+
 def _trainOcSvm(x):
     ocSvm = OneClassSVM(kernel="linear", gamma="scale")
     ocSvm.fit(x)
     return ocSvm
 
-def _trainSvm(x, y):
-    svm = SVC(kernel="linear", gamma="scale")
-    svm.fit(x, y)
-    return svm
+def _trainSgdOcSvm(x):
+    sgdOcSvm = SGDOneClassSVM()
+    sgdOcSvm.fit(x)
+    return sgdOcSvm
+
+def _trainLof(x):
+    lof = LocalOutlierFactor()
+    lof.fit(x)
+    return lof
+
+def _trainGnBayes(x, y):
+    gnBayes = GaussianNB()
+    gnBayes.fit(x, y)
+    return gnBayes
 
 def _predict(xTest, model):
     predictions = model.predict(xTest)
@@ -125,17 +143,16 @@ def _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives)
     accuracy = correctPredictionAmount / (correctPredictionAmount + incorrectPredictionAmount) * 100
     print("Accuracy: %.2f%%" % accuracy)
 
-def _isOneClass():
+def _getAlgorithm():
+    algorithmNames = [algEnum.name for algEnum in consts.AlgorithmEnum]
     if len(sys.argv) > 1:
-        algorithm = sys.argv[1]
-        if algorithm == "ocsvm":
-            return True
-        elif algorithm == "svm":
-            return False
+        algorithmName = sys.argv[1]
+        if algorithmName in algorithmNames:
+            return consts.AlgorithmEnum[algorithmName]
         else:
-            sys.exit("Invalid algorithm in arguments. Please chose either \"svm\" or \"ocsvm\"")
+            sys.exit("Invalid algorithm in arguments. Please chose one of the following: " + ", ".join(algorithmNames))            
     else:
-        sys.exit("Algorithm (\"svm\"/\"ocsvm\") missing in arguments")
+        sys.exit("Algorithm missing in arguments. Please chose one of the following: " + ", ".join(algorithmNames))
 
 def _getDatasetPath():
     if len(sys.argv) > 2:
@@ -150,8 +167,7 @@ def _getNumberOfComponents():
         sys.exit("Number of components missing in arguments")
 
 def run():
-    isOneClass = _isOneClass()
-    algorithmName = "OC-SVM" if isOneClass else "SVM"
+    algorithm = _getAlgorithm()
     datasetPath = _getDatasetPath()
     numberOfComponents = _getNumberOfComponents()
     batchSize = _getBatchSize(numberOfComponents)
@@ -161,14 +177,20 @@ def run():
     xTrainPaths, yTrain = _getSamplesPath(datasetPath, consts.SetEnum.train)
     pca = _getPca(xTrainPaths, yTrain, numberOfComponents, batchSize)
 
-    print("training " + algorithmName + "...")
+    print("training " + algorithm.name.capitalize() + "...")
     xTrain, yTrain = _getSamples(xTrainPaths, yTrain, pca, batchSize, numberOfComponents)
-    if isOneClass:
-        model = _trainOcSvm(xTrain, yTrain)
-    else:
+    if algorithm == consts.AlgorithmEnum.svm:
         model = _trainSvm(xTrain, yTrain)
+    elif algorithm == consts.AlgorithmEnum.ocsvm:
+        model = _trainOcSvm(xTrain)
+    elif algorithm == consts.AlgorithmEnum.sgdocsvm:
+        model = _trainSgdOcSvm(xTrain)
+    elif algorithm == consts.AlgorithmEnum.lof:
+        model = _trainLof(xTrain)
+    else: #consts.AlgorithmEnum.gnbayes
+        model = _trainGnBayes(xTrain, yTrain)
     
-    print("evaluating " + algorithmName + "...")
+    print("evaluating " + algorithm.name + "...")
     xTestPaths, yTest = _getSamplesPath(datasetPath, consts.SetEnum.test)
     xTest, yTest = _getSamples(xTestPaths, yTest, pca, batchSize, numberOfComponents)
     predictions = _predict(xTest, model)
