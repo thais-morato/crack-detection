@@ -41,8 +41,10 @@ def _getBatchSize(numberOfComponents):
     batchSize = max(numberOfComponents, params.BATCH_SIZE)
     return batchSize
 
-def _getBatches(xPaths, batchSize):
-    nBatches = int(np.ceil(len(xPaths)/batchSize))
+def _getBatches(xPaths, batchSize, numberOfComponents):
+    nBatches = int(np.floor(len(xPaths)/batchSize))
+    if len(xPaths) - nBatches*batchSize >= numberOfComponents:
+        nBatches += 1
     return list(range(nBatches))
 
 def _getBatch(xPaths, y, batchSize, batch):
@@ -59,21 +61,21 @@ def _getBatch(xPaths, y, batchSize, batch):
     return xBatch, yBatch
 
 def _getPca(xPaths, y, numberOfComponents, batchSize):
-    batches = _getBatches(xPaths, batchSize)
+    batches = _getBatches(xPaths, batchSize, numberOfComponents)
     pca = IncrementalPCA(n_components=numberOfComponents, batch_size=batchSize)
     for batch in batches:
         xBatch, yBatch = _getBatch(xPaths, y, batchSize, batch)
         pca.partial_fit(xBatch)
     return pca
 
-def _getSamples(xPaths, y, pca, batchSize):
-    batches = _getBatches(xPaths, batchSize)
+def _getSamples(xPaths, y, pca, batchSize, numberOfComponents):
+    batches = _getBatches(xPaths, batchSize, numberOfComponents)
     x = []
     for batch in batches:
         xBatch, yBatch = _getBatch(xPaths, y, batchSize, batch)
         xTransformedBatch = pca.transform(xBatch)
         x.extend(xTransformedBatch)
-    return x, y
+    return x, y[:len(x)]
 
 def _trainOcSvm(x):
     ocSvm = OneClassSVM(kernel="linear", gamma="scale")
@@ -160,7 +162,7 @@ def run():
     pca = _getPca(xTrainPaths, yTrain, numberOfComponents, batchSize)
 
     print("training " + algorithmName + "...")
-    xTrain, yTrain = _getSamples(xTrainPaths, yTrain, pca, batchSize)
+    xTrain, yTrain = _getSamples(xTrainPaths, yTrain, pca, batchSize, numberOfComponents)
     if isOneClass:
         model = _trainOcSvm(xTrain, yTrain)
     else:
@@ -168,7 +170,7 @@ def run():
     
     print("evaluating " + algorithmName + "...")
     xTestPaths, yTest = _getSamplesPath(datasetPath, consts.SetEnum.test)
-    xTest, yTest = _getSamples(xTestPaths, yTest, pca, batchSize)
+    xTest, yTest = _getSamples(xTestPaths, yTest, pca, batchSize, numberOfComponents)
     predictions = _predict(xTest, model)
     (truePositives, falsePositives, trueNegatives, falseNegatives) = _evaluate(yTest, predictions)
 
