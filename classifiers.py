@@ -177,7 +177,7 @@ def run():
     xTrainPaths, yTrain = _getSamplesPath(datasetPath, consts.SetEnum.train)
     pca = _getPca(xTrainPaths, yTrain, numberOfComponents, batchSize)
 
-    print("training " + algorithm.name.capitalize() + "...")
+    print("training " + algorithm.name.upper() + "...")
     xTrain, yTrain = _getSamples(xTrainPaths, yTrain, pca, batchSize, numberOfComponents)
     if algorithm == consts.AlgorithmEnum.svm:
         model = _trainSvm(xTrain, yTrain)
@@ -190,7 +190,7 @@ def run():
     else: #consts.AlgorithmEnum.gnbayes
         model = _trainGnBayes(xTrain, yTrain)
     
-    print("evaluating " + algorithm.name + "...")
+    print("evaluating " + algorithm.name.upper() + "...")
     xTestPaths, yTest = _getSamplesPath(datasetPath, consts.SetEnum.test)
     xTest, yTest = _getSamples(xTestPaths, yTest, pca, batchSize, numberOfComponents)
     predictions = _predict(xTest, model)
