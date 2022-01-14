@@ -33,10 +33,6 @@ def _getSamplesPath(datasetPath, subset):
     random.shuffle(y)
     return xPaths, y
 
-def _getNumberOfComponents(xTrainPaths):
-    exampleImg = _readImg(xTrainPaths[0])
-    return min(len(xTrainPaths), exampleImg.shape[0])
-
 def _getBatches(xPaths, batchSize, numberOfComponents):
     nBatches = int(np.floor(len(xPaths)/batchSize))
     if len(xPaths) - nBatches*batchSize >= numberOfComponents:
@@ -98,12 +94,18 @@ def _getDatasetPath():
     else:
         sys.exit("Dataset path missing in arguments")
 
+def _getNumberOfComponents():
+    if len(sys.argv) > 2:
+        return int(sys.argv[2])
+    else:
+        sys.exit("Number of components missing in arguments")
+
 def run():
     datasetPath = _getDatasetPath()
+    numberOfComponents = _getNumberOfComponents()
 
     print("analysing PCA...")
     xTrainPaths, yTrain = _getSamplesPath(datasetPath, consts.SetEnum.train)
-    numberOfComponents = _getNumberOfComponents(xTrainPaths)
     batchSize = numberOfComponents
     pca = _getPca(xTrainPaths, yTrain, numberOfComponents, batchSize)
     nComponents, explainedVariance = _getExplainedVariance(pca)
