@@ -9,8 +9,7 @@ class AlgorithmEnum(Enum):
     svm = 0
     ocsvm = 1
     sgdocsvm = 2
-    lof = 3
-    gnbayes = 4
+    gnbayes = 3
 
 TRAIN_OPTION_SCRATCH = 'scratch'
 TRAIN_OPTION_RESUME = 'resume'

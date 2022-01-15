@@ -8,7 +8,6 @@ import base.constants as consts
 from sklearn.svm import SVC, OneClassSVM
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDOneClassSVM
-from sklearn.neighbors import LocalOutlierFactor
 from sklearn.decomposition import IncrementalPCA
 
 def _getFilePaths(datasetPath, subset, isAnomalous):
@@ -44,10 +43,13 @@ def _getBatchSize(numberOfComponents):
     batchSize = max(numberOfComponents, params.BATCH_SIZE)
     return batchSize
 
-def _getBatches(xPaths, batchSize, numberOfComponents):
-    nBatches = int(np.floor(len(xPaths)/batchSize))
-    if len(xPaths) - nBatches*batchSize >= numberOfComponents:
-        nBatches += 1
+def _getBatches(xPaths, batchSize, numberOfComponents, forPca = False):
+    if forPca:
+        nBatches = int(np.floor(len(xPaths)/batchSize))
+        if len(xPaths) - nBatches*batchSize >= numberOfComponents:
+            nBatches += 1
+    else:
+        nBatches = int(np.ceil(len(xPaths)/batchSize))
     return list(range(nBatches))
 
 def _getBatch(xPaths, y, batchSize, batch):
@@ -64,7 +66,7 @@ def _getBatch(xPaths, y, batchSize, batch):
     return xBatch, yBatch
 
 def _getPca(xPaths, y, numberOfComponents, batchSize):
-    batches = _getBatches(xPaths, batchSize, numberOfComponents)
+    batches = _getBatches(xPaths, batchSize, numberOfComponents, forPca=True)
     pca = IncrementalPCA(n_components=numberOfComponents, batch_size=batchSize)
     for batch in batches:
         xBatch, yBatch = _getBatch(xPaths, y, batchSize, batch)
@@ -94,11 +96,6 @@ def _trainSgdOcSvm(x):
     sgdOcSvm = SGDOneClassSVM()
     sgdOcSvm.fit(x)
     return sgdOcSvm
-
-def _trainLof(x):
-    lof = LocalOutlierFactor()
-    lof.fit(x)
-    return lof
 
 def _trainGnBayes(x, y):
     gnBayes = GaussianNB()
@@ -185,8 +182,6 @@ def run():
         model = _trainOcSvm(xTrain)
     elif algorithm == consts.AlgorithmEnum.sgdocsvm:
         model = _trainSgdOcSvm(xTrain)
-    elif algorithm == consts.AlgorithmEnum.lof:
-        model = _trainLof(xTrain)
     else: #consts.AlgorithmEnum.gnbayes
         model = _trainGnBayes(xTrain, yTrain)
     
