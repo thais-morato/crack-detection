@@ -8,6 +8,7 @@ import base.constants as consts
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDOneClassSVM
 from sklearn.decomposition import IncrementalPCA
+from sklearn.model_selection import GridSearchCV
 
 def _getFilePaths(datasetPath, subset, isAnomalous):
     if subset == consts.SetEnum.train:
@@ -89,8 +90,26 @@ def _scale(x, scalingFactor):
     scaledX = [el*scalingFactor for el in x]
     return scaledX
 
-def _trainSgdOcSvm(x):
+def _hyperparameterSearch(xTrain, yTrain):
+    nuValues = [(x+1)/10 for x in range(10)]
     sgdOcSvm = SGDOneClassSVM()
+    parameterGrid = { 'nu': nuValues }
+    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='accuracy')
+    gridSearch.fit(xTrain, yTrain)
+    accuracy = [accuracy*100 for accuracy in gridSearch.cv_results_['mean_test_score']]
+    _plotHyperparameterSearch(nuValues, accuracy)
+    iBest = [ranking for ranking in gridSearch.cv_results_['rank_test_score']].index(1)
+    return nuValues[iBest]
+
+def _plotHyperparameterSearch(nuValues, accuracy):
+    plt.plot(nuValues, accuracy)
+    plt.title('Análise do hiperparâmetro \'nu\'')
+    plt.xlabel('nu')
+    plt.ylabel('Acurácia (%%)')
+    plt.show()
+
+def _trainSgdOcSvm(x, nu):
+    sgdOcSvm = SGDOneClassSVM(nu=nu)
     sgdOcSvm.fit(x)
     return sgdOcSvm
 
@@ -176,7 +195,8 @@ def run():
     if algorithm == consts.AlgorithmEnum.sgdocsvm:
         scalingFactor = _getScalingFactor(xTrain)
         xTrain = _scale(xTrain, scalingFactor)
-        model = _trainSgdOcSvm(xTrain)
+        nu = _hyperparameterSearch(xTrain, yTrain)
+        model = _trainSgdOcSvm(xTrain, nu)
     else: # consts.AlgorithmEnum.gnbayes
         scalingFactor = None
         model = _trainGnBayes(xTrain, yTrain)
