@@ -5,7 +5,6 @@ import os, sys, random, cv2
 import base.params as params
 import matplotlib.pyplot as plt
 import base.constants as consts
-from sklearn.svm import SVC, OneClassSVM
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDOneClassSVM
 from sklearn.decomposition import IncrementalPCA
@@ -82,15 +81,13 @@ def _getSamples(xPaths, y, pca, batchSize, numberOfComponents):
         x.extend(xTransformedBatch)
     return x, y[:len(x)]
 
-def _trainSvm(x, y):
-    svm = SVC(kernel="linear", gamma="scale")
-    svm.fit(x, y)
-    return svm
+def _getScalingFactor(xTrain):
+    norm = np.linalg.norm(xTrain)
+    return 1/norm
 
-def _trainOcSvm(x):
-    ocSvm = OneClassSVM(kernel="linear", gamma="scale")
-    ocSvm.fit(x)
-    return ocSvm
+def _scale(x, scalingFactor):
+    scaledX = [el*scalingFactor for el in x]
+    return scaledX
 
 def _trainSgdOcSvm(x):
     sgdOcSvm = SGDOneClassSVM()
@@ -176,18 +173,19 @@ def run():
 
     print("training " + algorithm.name.upper() + "...")
     xTrain, yTrain = _getSamples(xTrainPaths, yTrain, pca, batchSize, numberOfComponents)
-    if algorithm == consts.AlgorithmEnum.svm:
-        model = _trainSvm(xTrain, yTrain)
-    elif algorithm == consts.AlgorithmEnum.ocsvm:
-        model = _trainOcSvm(xTrain)
-    elif algorithm == consts.AlgorithmEnum.sgdocsvm:
+    if algorithm == consts.AlgorithmEnum.sgdocsvm:
+        scalingFactor = _getScalingFactor(xTrain)
+        xTrain = _scale(xTrain, scalingFactor)
         model = _trainSgdOcSvm(xTrain)
-    else: #consts.AlgorithmEnum.gnbayes
+    else: # consts.AlgorithmEnum.gnbayes
+        scalingFactor = None
         model = _trainGnBayes(xTrain, yTrain)
     
     print("evaluating " + algorithm.name.upper() + "...")
     xTestPaths, yTest = _getSamplesPath(datasetPath, consts.SetEnum.test)
     xTest, yTest = _getSamples(xTestPaths, yTest, pca, batchSize, numberOfComponents)
+    if scalingFactor != None:
+        xTest = _scale(xTest, scalingFactor)
     predictions = _predict(xTest, model)
     (truePositives, falsePositives, trueNegatives, falseNegatives) = _evaluate(yTest, predictions)
 

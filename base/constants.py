@@ -6,10 +6,8 @@ class SetEnum(Enum):
     test = 2
 
 class AlgorithmEnum(Enum):
-    svm = 0
-    ocsvm = 1
-    sgdocsvm = 2
-    gnbayes = 3
+    sgdocsvm = 0
+    gnbayes = 1
 
 TRAIN_OPTION_SCRATCH = 'scratch'
 TRAIN_OPTION_RESUME = 'resume'
