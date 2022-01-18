@@ -83,29 +83,30 @@ def _getSamples(xPaths, y, pca, batchSize, numberOfComponents):
     return x, y[:len(x)]
 
 def _getScalingFactor(xTrain):
-    norm = np.linalg.norm(xTrain)
-    return 1/norm
+    norms = [np.linalg.norm(x) for x in xTrain]
+    averageNorm = np.average(norms)
+    return 1/averageNorm
 
 def _scale(x, scalingFactor):
-    scaledX = [el*scalingFactor for el in x]
+    scaledX = [[feature*scalingFactor for feature in data] for data in x]
     return scaledX
 
 def _hyperparameterSearch(xTrain, yTrain):
     nuValues = [(x+1)/10 for x in range(10)]
     sgdOcSvm = SGDOneClassSVM()
     parameterGrid = { 'nu': nuValues }
-    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='accuracy')
+    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='f1')
     gridSearch.fit(xTrain, yTrain)
-    accuracy = [accuracy*100 for accuracy in gridSearch.cv_results_['mean_test_score']]
-    _plotHyperparameterSearch(nuValues, accuracy)
+    f1Score = [f1Score*100 for f1Score in gridSearch.cv_results_['mean_test_score']]
+    _plotHyperparameterSearch(nuValues, f1Score)
     iBest = [ranking for ranking in gridSearch.cv_results_['rank_test_score']].index(1)
     return nuValues[iBest]
 
-def _plotHyperparameterSearch(nuValues, accuracy):
-    plt.plot(nuValues, accuracy)
+def _plotHyperparameterSearch(nuValues, f1Score):
+    plt.plot(nuValues, f1Score)
     plt.title('Análise do hiperparâmetro \'nu\'')
     plt.xlabel('nu')
-    plt.ylabel('Acurácia (%%)')
+    plt.ylabel('F1 score (%)')
     plt.show()
 
 def _trainSgdOcSvm(x, nu):
