@@ -95,18 +95,18 @@ def _hyperparameterSearch(xTrain, yTrain):
     nuValues = [(x+1)/10 for x in range(10)]
     sgdOcSvm = SGDOneClassSVM()
     parameterGrid = { 'nu': nuValues }
-    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='f1')
+    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='balanced_accuracy')
     gridSearch.fit(xTrain, yTrain)
-    f1Score = [f1Score*100 for f1Score in gridSearch.cv_results_['mean_test_score']]
-    _plotHyperparameterSearch(nuValues, f1Score)
+    balancedAccuracy = [balancedAccuracy*100 for balancedAccuracy in gridSearch.cv_results_['mean_test_score']]
+    _plotHyperparameterSearch(nuValues, balancedAccuracy)
     iBest = [ranking for ranking in gridSearch.cv_results_['rank_test_score']].index(1)
     return nuValues[iBest]
 
-def _plotHyperparameterSearch(nuValues, f1Score):
-    plt.plot(nuValues, f1Score)
+def _plotHyperparameterSearch(nuValues, balancedAccuracy):
+    plt.plot(nuValues, balancedAccuracy)
     plt.title('Análise do hiperparâmetro \'nu\'')
     plt.xlabel('nu')
-    plt.ylabel('F1 score (%)')
+    plt.ylabel('Acurácia balanceada (%)')
     plt.show()
 
 def _trainSgdOcSvm(x, nu):
