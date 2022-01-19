@@ -101,20 +101,20 @@ def _hyperparameterSearch(datasetPath, numberOfComponents, pca, batchSize, scali
     sgdOcSvm = SGDOneClassSVM()
     parameterGrid = { 'nu': nuValues }
     stratifiedKFold = StratifiedKFold()
-    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='accuracy', cv=stratifiedKFold)
+    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='roc_auc', cv=stratifiedKFold)
     # performing grid search on validation set
     gridSearch.fit(xValidation, yValidation)
-    accuracy = [accuracy*100 for accuracy in gridSearch.cv_results_['mean_test_score']]
-    _plotHyperparameterSearch(nuValues, accuracy)
+    rocAuc = [rocAuc for rocAuc in gridSearch.cv_results_['mean_test_score']]
+    _plotHyperparameterSearch(nuValues, rocAuc)
     iBest = [ranking for ranking in gridSearch.cv_results_['rank_test_score']].index(1)
     return nuValues[iBest]
 
-def _plotHyperparameterSearch(nuValues, accuracy):
+def _plotHyperparameterSearch(nuValues, rocAuc):
     plt.figure(figsize=(11, 5))
-    plt.bar([str(nu) for nu in nuValues], accuracy)
+    plt.bar([str(nu) for nu in nuValues], rocAuc)
     plt.title('Análise do hiperparâmetro \'nu\'')
     plt.xlabel('nu')
-    plt.ylabel('Acurácia (%)')
+    plt.ylabel('ROC AUC')
     plt.show()
 
 def _trainSgdOcSvm(x, nu):
