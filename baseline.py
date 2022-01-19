@@ -8,7 +8,7 @@ import base.constants as consts
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDOneClassSVM
 from sklearn.decomposition import IncrementalPCA
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 def _getFilePaths(datasetPath, subset, isAnomalous):
     if subset == consts.SetEnum.train:
@@ -91,22 +91,30 @@ def _scale(x, scalingFactor):
     scaledX = [[feature*scalingFactor for feature in data] for data in x]
     return scaledX
 
-def _hyperparameterSearch(xTrain, yTrain):
-    nuValues = [(x+1)/10 for x in range(10)]
+def _hyperparameterSearch(datasetPath, numberOfComponents, pca, batchSize, scalingFactor):
+    # fetching validation data
+    xValidationPaths, yValidation = _getSamplesPath(datasetPath, consts.SetEnum.validation)
+    xValidation, yValidation = _getSamples(xValidationPaths, yValidation, pca, batchSize, numberOfComponents)
+    xValidation = _scale(xValidation, scalingFactor)
+    # setting grid search
+    nuValues = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2] + [(x+1)/10 for x in range(10)]
     sgdOcSvm = SGDOneClassSVM()
     parameterGrid = { 'nu': nuValues }
-    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='balanced_accuracy')
-    gridSearch.fit(xTrain, yTrain)
-    balancedAccuracy = [balancedAccuracy*100 for balancedAccuracy in gridSearch.cv_results_['mean_test_score']]
-    _plotHyperparameterSearch(nuValues, balancedAccuracy)
+    stratifiedKFold = StratifiedKFold()
+    gridSearch = GridSearchCV(sgdOcSvm, parameterGrid, scoring='accuracy', cv=stratifiedKFold)
+    # performing grid search on validation set
+    gridSearch.fit(xValidation, yValidation)
+    accuracy = [accuracy*100 for accuracy in gridSearch.cv_results_['mean_test_score']]
+    _plotHyperparameterSearch(nuValues, accuracy)
     iBest = [ranking for ranking in gridSearch.cv_results_['rank_test_score']].index(1)
     return nuValues[iBest]
 
-def _plotHyperparameterSearch(nuValues, balancedAccuracy):
-    plt.plot(nuValues, balancedAccuracy)
+def _plotHyperparameterSearch(nuValues, accuracy):
+    plt.figure(figsize=(11, 5))
+    plt.bar([str(nu) for nu in nuValues], accuracy)
     plt.title('Análise do hiperparâmetro \'nu\'')
     plt.xlabel('nu')
-    plt.ylabel('Acurácia balanceada (%)')
+    plt.ylabel('Acurácia (%)')
     plt.show()
 
 def _trainSgdOcSvm(x, nu):
@@ -196,7 +204,7 @@ def run():
     if algorithm == consts.AlgorithmEnum.sgdocsvm:
         scalingFactor = _getScalingFactor(xTrain)
         xTrain = _scale(xTrain, scalingFactor)
-        nu = _hyperparameterSearch(xTrain, yTrain)
+        nu = _hyperparameterSearch(datasetPath, numberOfComponents, pca, batchSize, scalingFactor)
         model = _trainSgdOcSvm(xTrain, nu)
     else: # consts.AlgorithmEnum.gnbayes
         scalingFactor = None
