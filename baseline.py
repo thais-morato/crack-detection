@@ -186,11 +186,22 @@ def _getNumberOfComponents():
     else:
         sys.exit("Number of components missing in arguments")
 
+def _getPerformGridSearch():
+    if len(sys.argv) > 4:
+        if sys.argv[4] == "True":
+            return True
+        if sys.argv[4] == "False":
+            return False
+        sys.exit("Invalid argument for enabling grid search. Please pass either 'True' or 'False'")
+    else:
+        return False
+
 def run():
     algorithm = _getAlgorithm()
     datasetPath = _getDatasetPath()
     numberOfComponents = _getNumberOfComponents()
     batchSize = _getBatchSize(numberOfComponents)
+    performGridSearch = _getPerformGridSearch()
     print("number of components: " + str(numberOfComponents))
 
     print("training PCA...")
@@ -202,7 +213,10 @@ def run():
     if algorithm == consts.AlgorithmEnum.sgdocsvm:
         scalingFactor = _getScalingFactor(xTrain)
         xTrain = _scale(xTrain, scalingFactor)
-        nu = _hyperparameterSearch(xTrain, yTrain)
+        if performGridSearch:
+            nu = _hyperparameterSearch(xTrain, yTrain)
+        else:
+            nu = 0.5
         model = _trainSgdOcSvm(xTrain, nu)
     else: # consts.AlgorithmEnum.gnbayes
         scalingFactor = None
