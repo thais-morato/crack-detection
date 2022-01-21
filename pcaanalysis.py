@@ -73,7 +73,7 @@ def _plotExplainedVariance(nComponents, explainedVariance):
     plt.plot(nComponents, explainedVariance)
     plt.title('Análise das componentes PCA')
     plt.xlabel('Número de componentes PCA')
-    plt.ylabel('Variância explicada (%% acumulada)')
+    plt.ylabel('Variância explicada (% acumulada)')
     plt.show()
 
 def _printNumberOfComponents(nComponents, explainedVariance):
