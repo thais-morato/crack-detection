@@ -8,8 +8,7 @@ import base.constants as consts
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDOneClassSVM
 from sklearn.decomposition import IncrementalPCA
-from sklearn.metrics import make_scorer, recall_score
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.metrics import accuracy_score, f1_score
 
 def _getFilePaths(datasetPath, subset, isAnomalous):
     if subset == consts.SetEnum.train:
@@ -92,27 +91,29 @@ def _scale(x, scalingFactor):
     scaledX = [[feature*scalingFactor for feature in data] for data in x]
     return scaledX
 
-def _score(yTrue, yPred):
-    yPred = yPred.tolist()
-    recall = recall_score(yTrue, yPred, pos_label=1)
-    prob = yPred.count(1)/len(yPred)
-    return pow(recall, 2)/prob if prob != 0 else 0
-
-def _hyperparameterSearch(xTrain, yTrain):
+def _performGridSeach(xTrain, xValidation, yValidation, metric):
     nuValues = [(x+1)/10 for x in range(10)]
-    gridSearch = GridSearchCV(SGDOneClassSVM(), { 'nu': nuValues }, scoring=make_scorer(_score), cv=StratifiedKFold())
-    gridSearch.fit(xTrain, yTrain)
-    scores = [score for score in gridSearch.cv_results_['mean_test_score']]
-    _plotHyperparameterSearch(nuValues, scores)
-    iBest = [ranking for ranking in gridSearch.cv_results_['rank_test_score']].index(1)
+    scores = []
+    for nu in nuValues:
+        sgdOcSvm = _trainSgdOcSvm(xTrain, nu)
+        predictions = _predict(xValidation, sgdOcSvm)
+        if metric == consts.MetricEnum.accuracy:
+            score = accuracy_score(yValidation, predictions) * 100
+        else:
+            score = f1_score(yValidation, predictions)
+        scores.append(score)
+    _plotGridSearchScores(nuValues, scores, metric)
+    bestScore = max(scores)
+    iBest = scores.index(bestScore)
     return nuValues[iBest]
 
-def _plotHyperparameterSearch(nuValues, scores):
+def _plotGridSearchScores(nuValues, scores, metric):
     plt.figure(figsize=(11, 5))
     plt.bar([str(nu) for nu in nuValues], scores)
     plt.title('Análise do hiperparâmetro \'nu\'')
     plt.xlabel('nu')
-    plt.ylabel('Valor da métrica')
+    yLabel = 'Acurácia (%)' if metric == consts.MetricEnum.accuracy else 'F1 Score'
+    plt.ylabel(yLabel)
     plt.show()
 
 def _trainSgdOcSvm(x, nu):
@@ -157,10 +158,8 @@ def _plotConfusionMatrix(truePositives, falsePositives, trueNegatives, falseNega
                 columns= pd.Index([params.FOLDER_ANOMALOUS, params.FOLDER_NORMAL], name="Actual"))
     sn.heatmap(df_cm, annot=True, fmt='d', cmap="Blues")
 
-def _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives):
-    correctPredictionAmount = truePositives + trueNegatives
-    incorrectPredictionAmount = falsePositives + falseNegatives
-    accuracy = correctPredictionAmount / (correctPredictionAmount + incorrectPredictionAmount) * 100
+def _printAccuracy(yTest, predictions):
+    accuracy = accuracy_score(yTest, predictions) * 100
     print("Accuracy: %.2f%%" % accuracy)
 
 def _getAlgorithm():
@@ -186,22 +185,23 @@ def _getNumberOfComponents():
     else:
         sys.exit("Number of components missing in arguments")
 
-def _getPerformGridSearch():
+def _getGridSearchMetric():
+    metricNames = [metric.name for metric in consts.MetricEnum]
     if len(sys.argv) > 4:
-        if sys.argv[4] == "True":
-            return True
-        if sys.argv[4] == "False":
-            return False
-        sys.exit("Invalid argument for enabling grid search. Please pass either 'True' or 'False'")
+        metricName = sys.argv[4]
+        if metricName in metricNames:
+            return consts.MetricEnum[metricName]
+        else:
+            sys.exit("Invalid metric in arguments. Please chose one of the following: " + ", ".join(metricNames))            
     else:
-        return False
+        return None
 
 def run():
     algorithm = _getAlgorithm()
     datasetPath = _getDatasetPath()
     numberOfComponents = _getNumberOfComponents()
     batchSize = _getBatchSize(numberOfComponents)
-    performGridSearch = _getPerformGridSearch()
+    gridSearchMetric = _getGridSearchMetric()
     print("number of components: " + str(numberOfComponents))
 
     print("training PCA...")
@@ -213,8 +213,11 @@ def run():
     if algorithm == consts.AlgorithmEnum.sgdocsvm:
         scalingFactor = _getScalingFactor(xTrain)
         xTrain = _scale(xTrain, scalingFactor)
-        if performGridSearch:
-            nu = _hyperparameterSearch(xTrain, yTrain)
+        if gridSearchMetric != None:
+            xValidationPaths, yValidation = _getSamplesPath(datasetPath, consts.SetEnum.validation)
+            xValidation, yValidation = _getSamples(xValidationPaths, yValidation, pca, batchSize, numberOfComponents)
+            xValidation = _scale(xValidation, scalingFactor)
+            nu = _performGridSeach(xTrain, xValidation, yValidation, gridSearchMetric)
         else:
             nu = 0.5
         model = _trainSgdOcSvm(xTrain, nu)
@@ -232,7 +235,7 @@ def run():
 
     print("done!")
     _plotConfusionMatrix(truePositives, falsePositives, trueNegatives, falseNegatives)
-    _printAccuracy(truePositives, falsePositives, trueNegatives, falseNegatives)
+    _printAccuracy(yTest, predictions)
     plt.show()
 
 if __name__ == "__main__":

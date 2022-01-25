@@ -9,6 +9,10 @@ class AlgorithmEnum(Enum):
     sgdocsvm = 0
     gnbayes = 1
 
+class MetricEnum(Enum):
+    accuracy = 0,
+    f1score = 1
+
 TRAIN_OPTION_SCRATCH = 'scratch'
 TRAIN_OPTION_RESUME = 'resume'
 OPTION_CANCEL = 'cancel'
