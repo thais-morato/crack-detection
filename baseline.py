@@ -94,6 +94,7 @@ def _scale(x, scalingFactor):
 def _performGridSeach(xTrain, xValidation, yValidation, metric):
     nuValues = [(x+1)/10 for x in range(10)]
     scores = []
+    bestModel = None
     for nu in nuValues:
         sgdOcSvm = _trainSgdOcSvm(xTrain, nu)
         predictions = _predict(xValidation, sgdOcSvm)
@@ -101,11 +102,11 @@ def _performGridSeach(xTrain, xValidation, yValidation, metric):
             score = accuracy_score(yValidation, predictions) * 100
         else:
             score = f1_score(yValidation, predictions)
+        if bestModel == None or score > max(scores):
+            bestModel = sgdOcSvm
         scores.append(score)
     _plotGridSearchScores(nuValues, scores, metric)
-    bestScore = max(scores)
-    iBest = scores.index(bestScore)
-    return nuValues[iBest]
+    return bestModel
 
 def _plotGridSearchScores(nuValues, scores, metric):
     plt.figure(figsize=(11, 5))
@@ -217,10 +218,9 @@ def run():
             xValidationPaths, yValidation = _getSamplesPath(datasetPath, consts.SetEnum.validation)
             xValidation, yValidation = _getSamples(xValidationPaths, yValidation, pca, batchSize, numberOfComponents)
             xValidation = _scale(xValidation, scalingFactor)
-            nu = _performGridSeach(xTrain, xValidation, yValidation, gridSearchMetric)
+            model = _performGridSeach(xTrain, xValidation, yValidation, gridSearchMetric)
         else:
-            nu = 0.5
-        model = _trainSgdOcSvm(xTrain, nu)
+            model = _trainSgdOcSvm(xTrain, 0.5)
     else: # consts.AlgorithmEnum.gnbayes
         scalingFactor = None
         model = _trainGnBayes(xTrain, yTrain)
